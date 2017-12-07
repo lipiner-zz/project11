@@ -15,8 +15,9 @@ SUBROUTINE_BODY_TAG = "subroutineBody"
 VAR_DEC_TAG = "varDec"
 PARAMETERS_LIST_TAG = "parameterList"
 SUBROUTINE_DEC_TAG = "subroutineDec"
-METHOD_DEC_KEYWORD = "method"
-SUBROUTINE_DEC_KEYWORDS = ['constructor', 'function', METHOD_DEC_KEYWORD]
+METHOD_DEC_KEYWORD = 'method'
+CONSTRUCTOR_DEC_KEYWORD = 'constructor'
+SUBROUTINE_DEC_KEYWORDS = [CONSTRUCTOR_DEC_KEYWORD, 'function', METHOD_DEC_KEYWORD]
 VAR_KEYWORDS = [VAR_SEGMENT_KEYWORD]
 TYPE_LIST = ["int", "char", "boolean"]
 STATEMENTS_TAG = "statements"
@@ -54,6 +55,7 @@ NOT_OPERATOR = "not"
 ARRAY_TYPE = "array"
 THAT_POINTER_INDEX = 1
 THIS_POINTER_INDEX = 0
+THIS_OBJECT_NAME = "this"
 
 
 class CompilationEngine:
@@ -77,6 +79,7 @@ class CompilationEngine:
         self.__writer = VMWriter(output_stream)
         self.__symbol_table = SymbolTable()
         self.__label_counter = 0
+        self.__class_name = None
 
     def compile(self):
         """
@@ -96,6 +99,7 @@ class CompilationEngine:
 
         # checks for the next parts of the class and writes them to the file
         self.__check_keyword_symbol(KEYWORD_TYPE)  # "class"
+        self.__class_name = self.__tokenizer.get_value()  # saves the class's name for its type when creating this
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # className
         self.__check_keyword_symbol(SYMBOL_TYPE)  # "{"
         while self.__compile_class_var_dec():
@@ -114,24 +118,25 @@ class CompilationEngine:
         :param: make_advance: boolean parameter- should make advance before the first call or not. Default value is True
         :return: True iff there was a valid class var declaration
         """
-        if not self.__check_keyword_symbol(KEYWORD_TYPE, CLASS_VAR_DEC_KEYWORDS, make_advance, write_to_file=False):
+        if not self.__check_keyword_symbol(KEYWORD_TYPE, CLASS_VAR_DEC_KEYWORDS, make_advance):
             # It is not a class var dec
             return False
 
-        # writes to the file the class var dec tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(CLASS_VAR_TAG))
-
-        self.__check_keyword_symbol(KEYWORD_TYPE, CLASS_VAR_DEC_KEYWORDS, make_advance=False)
-
+        var_kind = self.__tokenizer.get_value()  # saves the variable's kind
         self.__check_type()
+        var_type = self.__tokenizer.get_value()  # saves the variable's type
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
+        var_name = self.__tokenizer.get_value()  # saves the variable's name
+        self.__symbol_table.define(var_name, var_type, var_kind)  # adds the variable to the symbol table
+
+        # adds all additional variables to the symbol table
         while self.__check_keyword_symbol(SYMBOL_TYPE, [ADDITIONAL_VAR_OPTIONAL_MARK]):  # "," more varName
             self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
+            var_name = self.__tokenizer.get_value()  # saves the variable's name
+            self.__symbol_table.define(var_name, var_type, var_kind)  # adds the variable to the symbol table
 
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ";"
 
-        # writes to the file the class var dec end tag
-        self.__output_stream.write(self.__create_tag(CLASS_VAR_TAG, TAG_CLOSER))
         return True
 
     def __compile_subroutine(self, make_advance=True):
@@ -140,7 +145,7 @@ class CompilationEngine:
         :param: make_advance: boolean parameter- should make advance before the first call or not. Default value is True
         :return: True iff there was a valid subroutine declaration
         """
-        if not self.__check_keyword_symbol(KEYWORD_TYPE, SUBROUTINE_DEC_KEYWORDS, make_advance, write_to_file=False):
+        if not self.__check_keyword_symbol(KEYWORD_TYPE, SUBROUTINE_DEC_KEYWORDS, make_advance):
             # It is not a subroutine
             return False
 
@@ -148,9 +153,10 @@ class CompilationEngine:
 
         # adds this object in case of a method
         if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
-            self.__symbol_table.define("this", class_name, ARG_SEGMENT_KEYWORD)
-
-        self.__check_keyword_symbol(KEYWORD_TYPE, SUBROUTINE_DEC_KEYWORDS, make_advance=False)
+            self.__symbol_table.define(THIS_OBJECT_NAME, self.__class_name, ARG_SEGMENT_KEYWORD)
+        # creates the object in case of a constructor
+        elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
+            pass ############################################################## DONE THAT
 
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
@@ -162,8 +168,6 @@ class CompilationEngine:
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ")"
         self.__compile_subroutine_body()
 
-        # writes to the file the subroutine end tag
-        self.__output_stream.write(self.__create_tag(SUBROUTINE_DEC_TAG, TAG_CLOSER))
         return True
 
     def __compile_subroutine_body(self):
@@ -191,18 +195,20 @@ class CompilationEngine:
         Compiles a (possibly empty) parameter list, not including the enclosing “()”.
         In any way, the function advance the tokenizer
         """
-        # writes to the file the parameter list tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(PARAMETERS_LIST_TAG))
-
         if self.__check_type():
+            var_type = self.__tokenizer.get_value()  # gets the variable's type
             self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
+            var_name = self.__tokenizer.get_value()  # gets the variable's name
+            self.__symbol_table.define(var_name, var_type, ARG_SEGMENT_KEYWORD)  # add the variable to the symbol table
 
+            # adds all additional parameters to the symbol table
             while self.__check_keyword_symbol(SYMBOL_TYPE, [ADDITIONAL_VAR_OPTIONAL_MARK]):  # "," more varName
                 self.__check_type()
+                var_type = self.__tokenizer.get_value()  # gets the variable's type
                 self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
-
-        # writes to the file the parameter list end tag
-        self.__output_stream.write(self.__create_tag(PARAMETERS_LIST_TAG, TAG_CLOSER))
+                var_name = self.__tokenizer.get_value()  # gets the variable's name
+                # add the variable to the symbol table
+                self.__symbol_table.define(var_name, var_type, ARG_SEGMENT_KEYWORD)
 
     def __compile_var_dec(self):
         """
@@ -368,6 +374,7 @@ class CompilationEngine:
             self.__compile_expression()
             self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
         else:
+            # return void - push a junk constant 0 for a return value
             self.__writer.write_push(CONSTANT_SEGMENT, 0)
 
         self.__advance_tokenizer()

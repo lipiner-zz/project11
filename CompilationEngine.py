@@ -1,5 +1,5 @@
 from JackTokenizer import JackTokenizer, KEYWORD_TYPE, SYMBOL_TYPE, \
-    INTEGER_CONST_TYPE, STRING_CONST_TYPE, IDENTIFIER_TYPE, TAG_CLOSER, TAG_SUFFIX, TAG_PREFIX
+    INTEGER_CONST_TYPE, STRING_CONST_TYPE, IDENTIFIER_TYPE, TAG_CLOSER
 from SymbolTable import CLASS_VAR_DEC_KEYWORDS
 from VMWriter import VMWriter, CONSTANT_SEGMENT, LOCAL_SEGMENT, ARG_SEGMENT, STATIC_SEGMENT,\
     POINTER_SEGMENT, TEMP_SEGMENT, THAT_SEGMENT, THIS_SEGMENT
@@ -245,7 +245,7 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         """
         # compiling all statements
-        while self.__check_keyword_symbol(KEYWORD_TYPE, STATEMENTS_LIST, False, False):
+        while self.__check_keyword_symbol(KEYWORD_TYPE, STATEMENTS_LIST, False):
             # checking which statement to compile
             if self.__tokenizer.get_value() == LET_KEYWORD:
                 self.__compile_let()
@@ -548,7 +548,7 @@ class CompilationEngine:
         # writes to the file the expression list end tag
         self.__output_stream.write(self.__create_tag(EXPRESSION_LIST_TAG, TAG_CLOSER))
 
-    def __check_keyword_symbol(self, token_type, value_list=None, make_advance=True, write_to_file=True):
+    def __check_keyword_symbol(self, token_type, value_list=None, make_advance=True):
         """
         checks if the current token is from token_type (which is keyword or symbol), and it's value is one of the
         given optional values (in the value_list). If so, writes the token string to the output file
@@ -570,18 +570,17 @@ class CompilationEngine:
 
         return False
 
-    def __check_type(self, make_advance=True, write_to_file=True):
+    def __check_type(self, make_advance=True):
         """
         checks if the current token is a type. If so, writes the token to the stream
         :param make_advance: whether or not the method should call tokenizer.advance() at the beginning
-        :param write_to_file: whether or not the method should write the token to the file
         :return: true iff the current token is a type
         """
         # checks for builtin types
-        if self.__check_keyword_symbol(KEYWORD_TYPE, TYPE_LIST, make_advance, write_to_file):
+        if self.__check_keyword_symbol(KEYWORD_TYPE, TYPE_LIST, make_advance):
             return True
         # checks for user-defined class types
-        if not self.__check_keyword_symbol(IDENTIFIER_TYPE, make_advance=False, write_to_file=write_to_file):
+        if not self.__check_keyword_symbol(IDENTIFIER_TYPE, make_advance=False):
             return False
 
         return True
@@ -597,23 +596,6 @@ class CompilationEngine:
         :return: true iff the current token is a symbol containing an unary operation
         """
         return self.__check_keyword_symbol(SYMBOL_TYPE, UNARY_OP_LIST, make_advance)
-
-    def __create_tag(self, tag, closer=''):
-        """
-        Creates the type tag in its format
-        :param tag: The actual tag
-        :param closer: the closer note if there should be one. Otherwise it has default empty value
-        :return: the type tag
-        """
-        if closer:
-            # the closer is not empty - decrementing it and set the prefix to be after the changing
-            self.__prefix = self.__prefix[:-len(TAG_OPENER)]
-            prefix = self.__prefix
-        else:
-            # the closer is empty - saves the current prefix before incrementing it for the next tag
-            prefix = self.__prefix
-            self.__prefix += TAG_OPENER
-        return prefix + TAG_PREFIX + closer + tag + TAG_SUFFIX + TAG_END_OF_LINE
 
     def __advance_tokenizer(self):
         """

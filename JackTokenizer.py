@@ -7,8 +7,6 @@ KEYWORD_LIST = ['class', 'constructor', 'function', 'method', 'field', 'static',
                 'void', 'true', 'false', 'null', 'this', 'let', 'do', 'if', 'else', 'while', 'return']
 SYMBOL_LIST = ['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~']
 EOF_MARK = ''
-TAG_PREFIX = "<"
-TAG_SUFFIX = ">"
 TAG_CLOSER = "/"
 TAG_END_OF_LINE = "\n"
 TAG_DELIMITER = " "
@@ -116,21 +114,6 @@ class JackTokenizer:
         :return: the token value
         """
         return self.__current_token
-
-    def get_token_string(self):
-        """
-        :return: the token string in the format of: <TYPE> VALUE </TYPE>
-        """
-        return self.__create_type_tag() + TAG_DELIMITER + self.__current_token + TAG_DELIMITER + \
-            self.__create_type_tag(TAG_CLOSER) + TAG_END_OF_LINE
-
-    def __create_type_tag(self, closer=''):
-        """
-        Creates the type tag in its format
-        :param closer: the closer note if there should be one. Otherwise it has default empty value
-        :return: the type tag
-        """
-        return TAG_PREFIX + closer + self.__token_type + TAG_SUFFIX
 
     def __fix_symbol(self):
         """

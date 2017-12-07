@@ -1,6 +1,9 @@
 from JackTokenizer import JackTokenizer, KEYWORD_TYPE, SYMBOL_TYPE, \
     INTEGER_CONST_TYPE, STRING_CONST_TYPE, IDENTIFIER_TYPE, TAG_CLOSER, TAG_SUFFIX, TAG_PREFIX
 from SymbolTable import CLASS_VAR_DEC_KEYWORDS
+from VMWriter import VMWriter, CONSTANT_SEGMENT, LOCAL_SEGMENT, ARG_SEGMENT, STATIC_SEGMENT,\
+    POINTER_SEGMENT, TEMP_SEGMENT, THAT_SEGMENT, THIS_SEGMENT
+from SymbolTable import SymbolTable
 
 OP_LIST = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
 UNARY_OP_LIST = ['-', '~']
@@ -37,6 +40,9 @@ CLOSE_BRACKET = ')'
 OPEN_ARRAY_ACCESS_BRACKET = '['
 CALL_CLASS_METHOD_MARK = "."
 FUNCTION_CALL_MARKS = [OPEN_BRACKET, CALL_CLASS_METHOD_MARK]
+TRUE_CONSTANT = "true"
+FALSE_CONSTANT = "false"
+THIS_CONSTANT = "this"
 KEYWORD_CONSTANT_LIST = ["true", "false", "null", "this"]
 TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
@@ -60,7 +66,8 @@ class CompilationEngine:
         """
         self.__prefix = ""
         self.__tokenizer = JackTokenizer(input_stream)
-        self.__output_stream = output_stream
+        self.__writer = VMWriter(output_stream)
+        self.__symbol_table = SymbolTable()
 
     def compile(self):
         """
@@ -374,34 +381,32 @@ class CompilationEngine:
         """
         compiles an expression
         """
-        # writes to the file the expression tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(EXPRESSION_TAG))
-
         # compiles the first term
         self.__compile_term()
 
         # compiles all the op + term that exists
         while self.__check_op(False):
+            op = self.__tokenizer.get_value()
             self.__advance_tokenizer()
             self.__compile_term()
-
-        # writes to the file the expression end tag
-        self.__output_stream.write(self.__create_tag(EXPRESSION_TAG, TAG_CLOSER))
+            self.__writer.write_arithmetic(op)
 
     def __compile_term(self):
         """
         compiles a term
         """
-        # writes to the file the term tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(TERM_TAG))
-
         # checks for all the term options:
-        # integer/string constant
-        if self.__tokenizer.get_token_type() in [INTEGER_CONST_TYPE, STRING_CONST_TYPE]:
-            self.__output_stream.write(self.__prefix + self.__tokenizer.get_token_string())
+        # integer constant
+        if self.__tokenizer.get_token_type() == INTEGER_CONST_TYPE:
+            self.__writer.write_push(CONSTANT_SEGMENT, int(self.__tokenizer.get_value()))
+            self.__advance_tokenizer()
+        # string constant
+        if self.__tokenizer.get_token_type() in STRING_CONST_TYPE:
+            # DOING IT ALL
             self.__advance_tokenizer()
         # keyword constant
         elif self.__check_keyword_symbol(KEYWORD_TYPE, KEYWORD_CONSTANT_LIST, False):
+            if ()
             self.__advance_tokenizer()
         # (expression)
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET], False):
@@ -422,9 +427,6 @@ class CompilationEngine:
                     self.__compile_expression()
                     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
                     self.__advance_tokenizer()
-
-        # writes to the file the term end tag
-        self.__output_stream.write(self.__create_tag(TERM_TAG, TAG_CLOSER))
 
     def __check_subroutine_call(self):
         """

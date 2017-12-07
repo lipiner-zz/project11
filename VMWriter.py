@@ -7,6 +7,7 @@ TEMP_SEGMENT = "temp"
 THAT_SEGMENT = "that"
 THIS_SEGMENT = "this"
 
+
 class VMWriter:
 
     def __init__(self, output_stream):

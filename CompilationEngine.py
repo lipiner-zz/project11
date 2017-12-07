@@ -43,9 +43,12 @@ FUNCTION_CALL_MARKS = [OPEN_BRACKET, CALL_CLASS_METHOD_MARK]
 TRUE_CONSTANT = "true"
 FALSE_CONSTANT = "false"
 THIS_CONSTANT = "this"
-KEYWORD_CONSTANT_LIST = ["true", "false", "null", "this"]
+NULL_CONSTANT = "null"
+KEYWORD_CONSTANT_LIST = [TRUE_CONSTANT, FALSE_CONSTANT, THIS_CONSTANT, NULL_CONSTANT]
 TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
+MINUS = "-"
+LABEL_NAME = "L"
 
 
 class CompilationEngine:
@@ -68,6 +71,7 @@ class CompilationEngine:
         self.__tokenizer = JackTokenizer(input_stream)
         self.__writer = VMWriter(output_stream)
         self.__symbol_table = SymbolTable()
+        self.__label_counter = 0
 
     def compile(self):
         """
@@ -301,16 +305,18 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         Advance the tokenizer at the end.
         """
-        # writes to the file the while tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(WHILE_TAG))
-
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'while'
-
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
+
+        # writes the loop label
+        self.__writer.write_label(self.__label_counter)
         # advance the tokenizer for the expression
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
+        self.__writer.write_arithmetic(NOT)
+        # if the expression is false, goto the next label
+        self.__writer.write_if(self.__label_counter + 1)
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
         # advance the tokenizer for the statements
@@ -320,8 +326,13 @@ class CompilationEngine:
 
         self.__advance_tokenizer()
 
-        # writes to the file the while end tag
-        self.__output_stream.write(self.__create_tag(WHILE_TAG, TAG_CLOSER))
+        # goes back to the top of the label
+        self.__writer.write_goto(self.__label_counter)
+        self.__label_counter += 1  # increments the label counter for the end of the while label
+        self.__writer.write_label(self.__label_counter)  # writes the end loop label
+
+        # increments the label counter for the next time
+        self.__label_counter += 1
 
     def __compile_return(self):
         """
@@ -329,19 +340,15 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         Advance the tokenizer at the end.
         """
-        # writes to the file the return tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(RETURN_TAG))
-
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'return'
 
         if not self.__check_keyword_symbol(SYMBOL_TYPE, [END_LINE_MARK]):
             self.__compile_expression()
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)
+            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
 
         self.__advance_tokenizer()
 
-        # writes to the file the return end tag
-        self.__output_stream.write(self.__create_tag(RETURN_TAG, TAG_CLOSER))
+        self.__writer.write_return()
 
     def __compile_if(self):
         """
@@ -402,11 +409,17 @@ class CompilationEngine:
             self.__advance_tokenizer()
         # string constant
         if self.__tokenizer.get_token_type() in STRING_CONST_TYPE:
-            # DOING IT ALL
+            #####NOT FINISHED HERE
             self.__advance_tokenizer()
         # keyword constant
         elif self.__check_keyword_symbol(KEYWORD_TYPE, KEYWORD_CONSTANT_LIST, False):
-            if ()
+            if self.__tokenizer.get_value() == THIS_CONSTANT:
+                self.__writer.write_push(POINTER_SEGMENT, 0)
+            elif self.__tokenizer.get_value() == TRUE_CONSTANT:
+                self.__writer.write_push(CONSTANT_SEGMENT, 1)
+                self.__writer.write_arithmetic(MINUS)
+            else:  # false/null
+                self.__writer.write_push(CONSTANT_SEGMENT, 0)
             self.__advance_tokenizer()
         # (expression)
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET], False):
@@ -416,10 +429,12 @@ class CompilationEngine:
             self.__advance_tokenizer()
         # unaryOp + term
         elif self.__check_unary_op(False):
+            op = self.__tokenizer.get_value()
             self.__advance_tokenizer()
             self.__compile_term()
+            self.__writer.write_arithmetic(op)
         # varName / varName[expression] / subroutineCall- in any case, starts with identifier
-        else:
+        else: #####NOT FINISHED HERE
             if not self.__check_subroutine_call():  # anyway writes the identifier
                 # checks for varName[expression]
                 if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
@@ -427,6 +442,20 @@ class CompilationEngine:
                     self.__compile_expression()
                     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
                     self.__advance_tokenizer()
+
+    def __check_variable(self, make_advance=True):
+        if make_advance:
+            if self.__tokenizer.has_more_tokens():
+                self.__tokenizer.advance()
+            else:
+                return False
+        if self.__tokenizer.get_token_type() == IDENTIFIER_TYPE:
+            name = self.__tokenizer.get_value()
+            # if appears in the symbol table- variable name
+            if self.__symbol_table.index_of(name) is not None:
+                return True
+
+        return False
 
     def __check_subroutine_call(self):
         """
@@ -495,8 +524,6 @@ class CompilationEngine:
                 return False
         if self.__tokenizer.get_token_type() == token_type:
             if value_list is None or self.__tokenizer.get_value() in value_list:
-                if write_to_file:
-                    self.__output_stream.write(self.__prefix + self.__tokenizer.get_token_string())
                 return True
 
         return False

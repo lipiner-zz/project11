@@ -48,7 +48,7 @@ KEYWORD_CONSTANT_LIST = [TRUE_CONSTANT, FALSE_CONSTANT, THIS_CONSTANT, NULL_CONS
 TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
 MINUS = "-"
-LABEL_NAME = "L"
+NOT_OPERATOR = "not"
 
 
 class CompilationEngine:
@@ -314,7 +314,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
-        self.__writer.write_arithmetic(NOT)
+        self.__writer.write_arithmetic(NOT_OPERATOR)
         # if the expression is false, goto the next label
         self.__writer.write_if(self.__label_counter + 1)
 
@@ -356,9 +356,6 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         Advance the tokenizer at the end.
         """
-        # writes to the file the if tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(IF_TAG))
-
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'if'
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
@@ -366,6 +363,9 @@ class CompilationEngine:
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
+        self.__writer.write_arithmetic(NOT_OPERATOR)
+        # if the expression is false, goto the next label
+        self.__writer.write_if(self.__label_counter)
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
         # advance the tokenizer for the statements

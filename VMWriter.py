@@ -6,12 +6,13 @@ POINTER_SEGMENT = "pointer"
 TEMP_SEGMENT = "temp"
 THAT_SEGMENT = "that"
 THIS_SEGMENT = "this"
+LABEL_NAME = "L"
 
 
 class VMWriter:
 
     def __init__(self, output_stream):
-        self.output_stream = output_stream
+        self.__output_stream = output_stream
 
 
     def write_push(self, segment, index):
@@ -46,7 +47,7 @@ class VMWriter:
         :param label:
         :return:
         """
-        pass
+        self.__output_stream.write(LABEL_NAME + str(label))
 
     def write_goto(self, label):
         """

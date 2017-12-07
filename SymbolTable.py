@@ -3,8 +3,8 @@ from Variable import Variable
 STATIC_SEGMENT_KEYWORD = "static"
 FIELD_SEGMENT_KEYWORD = "field"
 ARG_SEGMENT_KEYWORD = "argument"
-VAR_SEGMENT_KEYWORD = "local"
-CLASS_VAR_DEC_KEYWORDS = ["field", "static"]
+VAR_SEGMENT_KEYWORD = "var"
+CLASS_VAR_DEC_KEYWORDS = [FIELD_SEGMENT_KEYWORD, STATIC_SEGMENT_KEYWORD]
 
 
 class SymbolTable:
@@ -12,14 +12,26 @@ class SymbolTable:
     def __init__(self):
         self.__class_variables = {}
         self.__subroutine_variables = {}
+        # saves how mane variable there are from each kind - will be the next index of that kind's variable
         self.__var_segment_count = {STATIC_SEGMENT_KEYWORD: 0, FIELD_SEGMENT_KEYWORD: 0, ARG_SEGMENT_KEYWORD: 0,
                                     VAR_SEGMENT_KEYWORD: 0}
 
     def start_subroutine(self):
-        pass
+        self.__subroutine_variables = {}
+        # nullify the number of args and vars
+        self.__var_segment_count[ARG_SEGMENT_KEYWORD] = 0
+        self.__var_segment_count[VAR_SEGMENT_KEYWORD] = 0
 
     def define(self, name, var_type, kind):
-        pass
+        # creates new var with the next index
+        new_var = Variable(name, var_type, kind, self.__var_segment_count[kind])
+        # adds the var to the correct dictionary
+        if kind in FIELD_SEGMENT_KEYWORD:
+            self.__class_variables[name] = new_var
+        else:
+            self.__subroutine_variables[name] = new_var
+
+        self.__var_segment_count[kind] += 1  # increment the next index of that kind
 
     def var_count(self, kind):
         return self.__var_segment_count[kind]

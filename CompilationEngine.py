@@ -161,34 +161,34 @@ class CompilationEngine:
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # subroutineName
+        func_name = self.__tokenizer.get_value()  # saves the function's mame
         self.__check_keyword_symbol(SYMBOL_TYPE)  # "("
 
         self.__compile_parameter_list()
         # advance was made in the compile_parameter_list without use
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ")"
-        self.__compile_subroutine_body()
+        self.__compile_subroutine_body(func_name)
 
         return True
 
-    def __compile_subroutine_body(self):
+    def __compile_subroutine_body(self, subroutine_name):
         """
         Compiles a subroutine body
         """
-        # writes to the file the subroutine body tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(SUBROUTINE_BODY_TAG))
-
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
 
+        vars_amount = 0  # number of locals the function needs
         # compiles and writes all variable declarations
-        while self.__compile_var_dec():
-            continue
+        current_dec_var_amount = self.__compile_var_dec()
+        while current_dec_var_amount:  # as long there are more declaration
+            vars_amount += current_dec_var_amount  # adds the last amount of vars that were declared
+            current_dec_var_amount = self.__compile_var_dec()
+
+        self.__writer.write_function(subroutine_name, vars_amount)  # writes the function's title
         # compiles the statements of the subroutine
         self.__compile_statements()
 
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '}'
-
-        # writes to the file the subroutine body end tag
-        self.__output_stream.write(self.__create_tag(SUBROUTINE_BODY_TAG, TAG_CLOSER))
 
     def __compile_parameter_list(self):
         """
@@ -214,12 +214,15 @@ class CompilationEngine:
         """
         checks if the current token is set to variable declaration, If so, returns true and writes the tokens
         to the stream. Otherwise, doesn't write to the stream, and returns False
-        :return: True iff the current token is set to the beginning of variable declaration
+        :return: number of variables that were declared. If the current token is not set to the beginning of
+        variable declaration, returns 0
         """
+        vars_amount = 0
         # checks if the current token is set to 'var', which means it is a var declaration
         if not self.__check_keyword_symbol(KEYWORD_TYPE, VAR_KEYWORDS):  # 'var'
-            return False
+            return vars_amount
 
+        vars_amount += 1  # first variable declaration
         self.__check_type()
         var_type = self.__tokenizer.get_value()
 
@@ -229,12 +232,13 @@ class CompilationEngine:
 
         # adds all additional variables to the symbol table
         while self.__check_keyword_symbol(SYMBOL_TYPE, [ADDITIONAL_VAR_OPTIONAL_MARK]):
+            vars_amount += 1  # more variable declarations
             self.__check_keyword_symbol(IDENTIFIER_TYPE)  # variableName
             var_name = self.__tokenizer.get_value()
             self.__symbol_table.define(var_name, var_type, VAR_SEGMENT_KEYWORD)
 
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
-        return True
+        return vars_amount
 
     def __compile_statements(self):
         """

@@ -56,6 +56,8 @@ ARRAY_TYPE = "array"
 THAT_POINTER_INDEX = 1
 THIS_POINTER_INDEX = 0
 THIS_OBJECT_NAME = "this"
+ALLOC_FUNCTION = "Memory.alloc"
+ALLOC_ARGS_NUM = 1
 
 
 class CompilationEngine:
@@ -150,7 +152,10 @@ class CompilationEngine:
             self.__symbol_table.define(THIS_OBJECT_NAME, self.__class_name, ARG_SEGMENT_KEYWORD)
         # creates the object in case of a constructor
         elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
-            pass ############################################################## DONE THAT
+            num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
+            self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
+            self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
+            self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
 
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
@@ -369,7 +374,14 @@ class CompilationEngine:
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'return'
 
         if not self.__check_keyword_symbol(SYMBOL_TYPE, [END_LINE_MARK]):
-            self.__compile_expression()
+            if self.__tokenizer.get_value() == THIS_OBJECT_NAME and \
+                            self.__symbol_table.get_type_of(THIS_OBJECT_NAME) is None:
+                # returning this in the constructor - push pointer 0
+                self.__writer.write_push(POINTER_SEGMENT, THIS_POINTER_INDEX)
+                self.__advance_tokenizer()
+            else:
+                # returning an expression
+                self.__compile_expression()
             self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
         else:
             # return void - push a junk constant 0 for a return value

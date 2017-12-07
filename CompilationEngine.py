@@ -253,9 +253,6 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         Advance the tokenizer at the end
         """
-        # writes to the file the do tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(DO_TAG))
-
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'do'
 
         # advance the tokenizer for the subroutine call
@@ -264,9 +261,6 @@ class CompilationEngine:
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
 
         self.__advance_tokenizer()
-
-        # writes to the file the do end tag
-        self.__output_stream.write(self.__create_tag(DO_TAG, TAG_CLOSER))
 
     def __compile_let(self):
         """
@@ -364,7 +358,7 @@ class CompilationEngine:
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
         self.__writer.write_arithmetic(NOT_OPERATOR)
-        # if the expression is false, goto the next label
+        # if the expression is false, goto the next label (else label)
         self.__writer.write_if(self.__label_counter)
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
@@ -373,6 +367,8 @@ class CompilationEngine:
         self.__compile_statements()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '}'
 
+        self.__writer.write_goto(self.__label_counter + 1)  # goto the next label after at the end of the if statement
+        self.__writer.write_label(self.__label_counter)  # else label
         if self.__check_keyword_symbol(KEYWORD_TYPE, [ELSE_KEYWORD]):  # 'else'
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
             # advance the tokenizer for the statements
@@ -381,8 +377,7 @@ class CompilationEngine:
             self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '}'
             self.__advance_tokenizer()
 
-        # writes to the file the if end tag
-        self.__output_stream.write(self.__create_tag(IF_TAG, TAG_CLOSER))
+        self.__writer.write_label(self.__label_counter + 1)  # write the end if statement label
 
     def __compile_expression(self):
         """

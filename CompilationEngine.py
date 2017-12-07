@@ -3,7 +3,8 @@ from JackTokenizer import JackTokenizer, KEYWORD_TYPE, SYMBOL_TYPE, \
 from SymbolTable import CLASS_VAR_DEC_KEYWORDS
 from VMWriter import VMWriter, CONSTANT_SEGMENT, LOCAL_SEGMENT, ARG_SEGMENT, STATIC_SEGMENT,\
     POINTER_SEGMENT, TEMP_SEGMENT, THAT_SEGMENT, THIS_SEGMENT
-from SymbolTable import SymbolTable
+from SymbolTable import SymbolTable, STATIC_SEGMENT_KEYWORD, FIELD_SEGMENT_KEYWORD, ARG_SEGMENT_KEYWORD, \
+    VAR_SEGMENT_KEYWORD
 
 OP_LIST = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
 UNARY_OP_LIST = ['-', '~']
@@ -14,8 +15,9 @@ SUBROUTINE_BODY_TAG = "subroutineBody"
 VAR_DEC_TAG = "varDec"
 PARAMETERS_LIST_TAG = "parameterList"
 SUBROUTINE_DEC_TAG = "subroutineDec"
-SUBROUTINE_DEC_KEYWORDS = ['constructor', 'function', 'method']
-VAR_KEYWORDS = ['var']
+METHOD_DEC_KEYWORD = "method"
+SUBROUTINE_DEC_KEYWORDS = ['constructor', 'function', METHOD_DEC_KEYWORD]
+VAR_KEYWORDS = [VAR_SEGMENT_KEYWORD]
 TYPE_LIST = ["int", "char", "boolean"]
 STATEMENTS_TAG = "statements"
 STATEMENTS_LIST = ['let', 'if', 'while', 'do', 'return']
@@ -142,8 +144,11 @@ class CompilationEngine:
             # It is not a subroutine
             return False
 
-        # writes to the file the subroutine tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(SUBROUTINE_DEC_TAG))
+        self.__symbol_table.start_subroutine()  # creates new subroutine table
+
+        # adds this object in case of a method
+        if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
+            self.__symbol_table.define("this", class_name, ARG_SEGMENT_KEYWORD)
 
         self.__check_keyword_symbol(KEYWORD_TYPE, SUBROUTINE_DEC_KEYWORDS, make_advance=False)
 
@@ -206,23 +211,23 @@ class CompilationEngine:
         :return: True iff the current token is set to the beginning of variable declaration
         """
         # checks if the current token is set to 'var', which means it is a var declaration
-        if not self.__check_keyword_symbol(KEYWORD_TYPE, VAR_KEYWORDS, write_to_file=False):  # 'var'
+        if not self.__check_keyword_symbol(KEYWORD_TYPE, VAR_KEYWORDS):  # 'var'
             return False
 
-        # writes to the file the var declaration tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(VAR_DEC_TAG))
-
-        self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'var'
         self.__check_type()
+        var_type = self.__tokenizer.get_value()
+
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # variableName
-        # writes all variables
+        var_name = self.__tokenizer.get_value()
+        self.__symbol_table.define(var_name, var_type, VAR_SEGMENT_KEYWORD)  # add the variable to symbol table
+
+        # adds all additional variables to the symbol table
         while self.__check_keyword_symbol(SYMBOL_TYPE, [ADDITIONAL_VAR_OPTIONAL_MARK]):
-            self.__check_keyword_symbol(IDENTIFIER_TYPE)
+            self.__check_keyword_symbol(IDENTIFIER_TYPE)  # variableName
+            var_name = self.__tokenizer.get_value()
+            self.__symbol_table.define(var_name, var_type, VAR_SEGMENT_KEYWORD)
 
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
-
-        # writes to the file the var declaration end tag
-        self.__output_stream.write(self.__create_tag(VAR_DEC_TAG, TAG_CLOSER))
         return True
 
     def __compile_statements(self):
@@ -230,9 +235,6 @@ class CompilationEngine:
         compiles the statements inside a subroutine.
         Assumes the tokenizer is advanced for the first call.
         """
-        # writes to the file the statements tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(STATEMENTS_TAG))
-
         # compiling all statements
         while self.__check_keyword_symbol(KEYWORD_TYPE, STATEMENTS_LIST, False, False):
             # checking which statement to compile
@@ -246,9 +248,6 @@ class CompilationEngine:
                 self.__compile_return()
             else:
                 self.__compile_if()
-
-        # writes to the file the statements end tag
-        self.__output_stream.write(self.__create_tag(STATEMENTS_TAG, TAG_CLOSER))
 
     def __compile_do(self):
         """
@@ -368,6 +367,8 @@ class CompilationEngine:
         if not self.__check_keyword_symbol(SYMBOL_TYPE, [END_LINE_MARK]):
             self.__compile_expression()
             self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
+        else:
+            self.__writer.write_push(CONSTANT_SEGMENT, 0)
 
         self.__advance_tokenizer()
 

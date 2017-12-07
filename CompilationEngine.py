@@ -94,13 +94,10 @@ class CompilationEngine:
         Compiles a complete class
         :return: True iff the class was compiled successfully
         """
-        # writes to the file the class tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(CLASS_TAG))
-
-        # checks for the next parts of the class and writes them to the file
+        # checks the next parts of the class and writes them to the file
         self.__check_keyword_symbol(KEYWORD_TYPE)  # "class"
-        self.__class_name = self.__tokenizer.get_value()  # saves the class's name for its type when creating this
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # className
+        self.__class_name = self.__tokenizer.get_value()  # saves the class's name for its type when creating this
         self.__check_keyword_symbol(SYMBOL_TYPE)  # "{"
         while self.__compile_class_var_dec():
             continue
@@ -108,9 +105,6 @@ class CompilationEngine:
             self.__advance_tokenizer()
 
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # block closer "}"
-
-        # writes to the file the class end tag
-        self.__output_stream.write(self.__create_tag(CLASS_TAG, TAG_CLOSER))
 
     def __compile_class_var_dec(self, make_advance=True):
         """

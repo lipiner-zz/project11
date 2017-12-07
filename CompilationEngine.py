@@ -1,5 +1,6 @@
 from JackTokenizer import JackTokenizer, KEYWORD_TYPE, SYMBOL_TYPE, \
     INTEGER_CONST_TYPE, STRING_CONST_TYPE, IDENTIFIER_TYPE, TAG_CLOSER, TAG_SUFFIX, TAG_PREFIX
+from SymbolTable import CLASS_VAR_DEC_KEYWORDS
 
 OP_LIST = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
 UNARY_OP_LIST = ['-', '~']
@@ -9,7 +10,6 @@ CLASS_VAR_TAG = "classVarDec"
 SUBROUTINE_BODY_TAG = "subroutineBody"
 VAR_DEC_TAG = "varDec"
 PARAMETERS_LIST_TAG = "parameterList"
-CLASS_VAR_DEC_KEYWORDS = ["field", "static"]
 SUBROUTINE_DEC_TAG = "subroutineDec"
 SUBROUTINE_DEC_KEYWORDS = ['constructor', 'function', 'method']
 VAR_KEYWORDS = ['var']

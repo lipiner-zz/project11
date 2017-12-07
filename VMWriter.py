@@ -9,6 +9,10 @@ POINTER_SEGMENT = "pointer"
 TEMP_SEGMENT = "temp"
 THAT_SEGMENT = "that"
 THIS_SEGMENT = "this"
+LABEL_PREFIX = "("
+LABEL_SUFFIX = ")"
+GOTO_COOMAND = "goto "
+IF_COMMAND = "if-goto "
 SEGMENTS_DICT = {STATIC_SEGMENT_KEYWORD: STATIC_SEGMENT, ARG_SEGMENT_KEYWORD: ARG_SEGMENT,
                  VAR_SEGMENT_KEYWORD: LOCAL_SEGMENT, FIELD_SEGMENT_KEYWORD: FIELD_SEGMENT_KEYWORD}
 LABEL_NAME = "L"
@@ -49,26 +53,23 @@ class VMWriter:
     def write_label(self, label):
         """
         Writes a VM label command
-        :param label:
-        :return:
+        :param label: The number (index) of the label to create
         """
-        self.__output_stream.write(LABEL_NAME + str(label))
+        self.__output_stream.write(LABEL_PREFIX + LABEL_NAME + str(label) + LABEL_SUFFIX)
 
     def write_goto(self, label):
         """
-        Writes a VM label command
-        :param label:
-        :return:
+        Writes a VM goto command
+        :param label: The number (index) of the label to create
         """
-        pass
+        self.__output_stream.write(GOTO_COOMAND + LABEL_NAME + str(label))
 
     def write_if(self, label):
         """
         Writes a VM If-goto command
-        :param label:
-        :return:
+        :param label: The number (index) of the label to create
         """
-        pass
+        self.__output_stream.write(IF_COMMAND + LABEL_NAME + str(label))
 
     def write_call(self, name, n_args):
         """

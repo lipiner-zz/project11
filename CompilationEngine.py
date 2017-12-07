@@ -49,6 +49,9 @@ TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
 MINUS = "-"
 NOT_OPERATOR = "not"
+ARRAY_TYPE = "array"
+THAT_POINTER_INDEX = 1
+THIS_POINTER_INDEX = 0
 
 
 class CompilationEngine:
@@ -268,30 +271,56 @@ class CompilationEngine:
         Assumes the tokenizer is advanced for the first call.
         Advance the tokenizer at the end.
         """
-        # writes to the file the let tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(LET_TAG))
-
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'let'
 
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
-        if self.__check_keyword_symbol(SYMBOL_TYPE, OPEN_ARRAY_ACCESS_BRACKET):  # '['
-            # advance the tokenizer for the expression
-            self.__advance_tokenizer()
-            self.__compile_expression()
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
-            self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
-        else:  # without calling advance
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
+        left_side_var = self.__tokenizer.get_value()
+        # left_side_type = self.__symbol_table.get_type_of(left_side_var)
+        # left_side_kind = self.__symbol_table.get_kind_of(self.__tokenizer.get_value())
+        # compile the left side of the equation
+        # self.__advance_tokenizer()
+        # self.__compile_expression()
+        # self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
 
-        # advance the tokenizer for the expression
-        self.__advance_tokenizer()
+        # compile the left side of the equation
+        if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
+            ########## CHANGE THAT TO COMPILE ARRAY EXPRESSION!!!!!!
+            self.__compile_expression()
+            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
+        else:  # with calling advance
+            self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
+
+        # if self.__check_keyword_symbol(SYMBOL_TYPE, OPEN_ARRAY_ACCESS_BRACKET):  # '['
+        #     # advance the tokenizer for the expression
+        #     self.__advance_tokenizer()
+        #     self.__compile_expression()
+        #     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
+        #     self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
+        # else:  # without calling advance
+        #     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
+
+        # # compile the left side of the equation
+        # self.__advance_tokenizer()
+        # self.__compile_expression()
+        # self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
+
+        # compile the right side of the equation
+        self.__advance_tokenizer()  # advance the tokenizer for the expression
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
-
         self.__advance_tokenizer()
 
-        # writes to the file the let end tag
-        self.__output_stream.write(self.__create_tag(LET_TAG, TAG_CLOSER))
+        # assign the right side of the equation (that is in the stack) into the left side
+        if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
+            # assign into an array
+            self.__writer.write_pop(TEMP_SEGMENT, 0)
+            self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)
+            self.__writer.write_push(TEMP_SEGMENT, 0)
+            self.__writer.write_pop(THAT_SEGMENT, 0)
+        else:
+            # assign into any other variable directly
+            self.__writer.write_pop(self.__symbol_table.get_kind_of(left_side_var),
+                                    self.__symbol_table.get_index_of(left_side_var))
 
     def __compile_while(self):
         """
@@ -447,7 +476,7 @@ class CompilationEngine:
         if self.__tokenizer.get_token_type() == IDENTIFIER_TYPE:
             name = self.__tokenizer.get_value()
             # if appears in the symbol table- variable name
-            if self.__symbol_table.index_of(name) is not None:
+            if self.__symbol_table.get_index_of(name) is not None:
                 return True
 
         return False

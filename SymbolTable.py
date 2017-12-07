@@ -55,7 +55,7 @@ class SymbolTable:
         """
         return self.__var_segment_count[kind]
 
-    def type_of(self, var_name):
+    def get_type_of(self, var_name):
         """
         :param var_name: the desired variable's name
         :return: Returns the type of the named identifier in the current scope. Returns NONE if the
@@ -67,7 +67,7 @@ class SymbolTable:
             return self.__class_variables[var_name].get_type()
         return None
 
-    def kind_of(self, var_name):
+    def get_kind_of(self, var_name):
         """
         :param var_name: the desired variable's name
         :return: Returns the kind of the named identifier in the current scope. Returns NONE if the
@@ -79,7 +79,7 @@ class SymbolTable:
             return self.__class_variables[var_name].get_type()
         return None
 
-    def index_of(self, var_name):
+    def get_index_of(self, var_name):
         """
         :param var_name: the desired variable's name
         :return: Returns the index of the named identifier in the current scope. Returns NONE if the

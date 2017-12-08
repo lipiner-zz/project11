@@ -51,6 +51,7 @@ KEYWORD_CONSTANT_LIST = [TRUE_CONSTANT, FALSE_CONSTANT, THIS_CONSTANT, NULL_CONS
 TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
 MINUS = "-"
+PLUS = "+"
 NOT_OPERATOR = "not"
 ARRAY_TYPE = "array"
 THAT_POINTER_INDEX = 1
@@ -476,7 +477,43 @@ class CompilationEngine:
             self.__compile_term()
             self.__writer.write_arithmetic(op)
         # varName / varName[expression] / subroutineCall- in any case, starts with identifier
-        else: #####NOT FINISHED HERE
+        else: #################CHANGE SO A SUBROUTINE CALL WILL BE HANDLED
+            if self.__check_variable():
+                identifier_name = self.__tokenizer.get_value()
+                # varName[expression]
+                if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):
+                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
+                                             self.__symbol_table.get_index_of(identifier_name))
+                    self.__advance_tokenizer()
+                    self.__compile_expression()
+                    self.__writer.write_arithmetic(PLUS)
+                    self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)
+                    self.__writer.write_push(THAT_SEGMENT, 0)
+                    self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
+                    self.__advance_tokenizer()
+                # method call: varName.funcName(expressionList)
+                elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
+                    self.__advance_tokenizer()
+                    method_name = self.__tokenizer.get_value()
+                    class_name = self.__symbol_table.get_type_of(identifier_name)
+                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
+                                             self.__symbol_table.get_index_of(identifier_name))
+                    self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
+                    num_args = self.__compile_expression_list()
+                    self.__writer.write_call(class_name + "." + method_name, num_args + 1)
+                    self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
+                    self.__advance_tokenizer()
+                # varName
+                else:
+                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
+                                             self.__symbol_table.get_index_of(identifier_name))
+            else:
+                # function call: className.funcName(expressionList)
+                if self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
+                    self.__advance_tokenizer()
+                    method_name = self.__tokenizer.get_value()
+
+                self.__check_subroutine_call(identifier_name)
             if not self.__check_subroutine_call():  # anyway writes the identifier
                 # checks for varName[expression]
                 if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
@@ -499,13 +536,12 @@ class CompilationEngine:
 
         return False
 
-    def __check_subroutine_call(self):
+    def __check_subroutine_call(self, func_name):
         """
         checks if the next tokens are subroutine call. In any case, writes to the stream the first identifier:
         subroutine/class/variable name
         :return: true iff the next tokens are subroutine calls
         """
-        self.__check_keyword_symbol(IDENTIFIER_TYPE, make_advance=False)  # subroutine/class/var name
 
         # checks if the next token is '(' : regular subroutine call
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET]):
@@ -527,26 +563,26 @@ class CompilationEngine:
     def __compile_expression_list(self):
         """
         compiles an expression list
+        :return: the number of expressions compiled
         """
-        # writes to the file the expression list tag and increment the prefix tabs
-        self.__output_stream.write(self.__create_tag(EXPRESSION_LIST_TAG))
-
+        exp_counter = 0
         self.__advance_tokenizer()
 
         # if the expression list is not empty: compile all the expression
         if self.__tokenizer.get_value() != CLOSE_BRACKET:
+            exp_counter += 1
             # compiles the first expression
             self.__compile_expression()
 
             # checks for more expressions separated with comma
             while self.__check_keyword_symbol(SYMBOL_TYPE, [ADDITIONAL_VAR_OPTIONAL_MARK], False):
+                exp_counter += 1
                 # advances the tokenizer
                 self.__advance_tokenizer()
                 # compiles the next expression
                 self.__compile_expression()
 
-        # writes to the file the expression list end tag
-        self.__output_stream.write(self.__create_tag(EXPRESSION_LIST_TAG, TAG_CLOSER))
+        return exp_counter
 
     def __check_keyword_symbol(self, token_type, value_list=None, make_advance=True):
         """

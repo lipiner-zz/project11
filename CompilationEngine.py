@@ -21,13 +21,13 @@ SUBROUTINE_DEC_KEYWORDS = [CONSTRUCTOR_DEC_KEYWORD, 'function', METHOD_DEC_KEYWO
 VAR_KEYWORDS = [VAR_SEGMENT_KEYWORD]
 TYPE_LIST = ["int", "char", "boolean"]
 STATEMENTS_TAG = "statements"
-STATEMENTS_LIST = ['let', 'if', 'while', 'do', 'return']
 LET_KEYWORD = "let"
 IF_KEYWORD = "if"
 ELSE_KEYWORD = "else"
 WHILE_KEYWORD = "while"
 DO_KEYWORD = "do"
 RETURN_KEYWORD = "return"
+STATEMENTS_LIST = [LET_KEYWORD, IF_KEYWORD, WHILE_KEYWORD, DO_KEYWORD, RETURN_KEYWORD]
 LET_TAG = "letStatement"
 IF_TAG = "ifStatement"
 WHILE_TAG = "whileStatement"
@@ -52,11 +52,10 @@ TAG_OPENER = "\t"
 TAG_END_OF_LINE = "\n"
 MINUS = "-"
 PLUS = "+"
-NOT_OPERATOR = "not"
+NOT_OPERATOR = "~"
 ARRAY_TYPE = "array"
 THAT_POINTER_INDEX = 1
 THIS_POINTER_INDEX = 0
-THIS_OBJECT_NAME = "this"
 ALLOC_FUNCTION = "Memory.alloc"
 ALLOC_ARGS_NUM = 1
 
@@ -150,7 +149,7 @@ class CompilationEngine:
 
         # adds this object in case of a method
         if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
-            self.__symbol_table.define(THIS_OBJECT_NAME, self.__class_name, ARG_SEGMENT_KEYWORD)
+            self.__symbol_table.define(THIS_CONSTANT, self.__class_name, ARG_SEGMENT_KEYWORD)
         # creates the object in case of a constructor
         elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
             num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
@@ -375,8 +374,8 @@ class CompilationEngine:
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'return'
 
         if not self.__check_keyword_symbol(SYMBOL_TYPE, [END_LINE_MARK]):
-            if self.__tokenizer.get_value() == THIS_OBJECT_NAME and \
-                            self.__symbol_table.get_type_of(THIS_OBJECT_NAME) is None:
+            if self.__tokenizer.get_value() == THIS_CONSTANT and \
+                            self.__symbol_table.get_type_of(THIS_CONSTANT) is None:
                 # returning this in the constructor - push pointer 0
                 self.__writer.write_push(POINTER_SEGMENT, THIS_POINTER_INDEX)
                 self.__advance_tokenizer()

@@ -344,14 +344,18 @@ class CompilationEngine:
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
 
         # writes the loop label
-        self.__writer.write_label(self.__label_counter)
+        start_loop_label = self.__label_counter
+        self.__label_counter += 1
+        self.__writer.write_label(start_loop_label)
         # advance the tokenizer for the expression
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
         self.__writer.write_arithmetic(NOT_OPERATOR, True)
         # if the expression is false, goto the next label
-        self.__writer.write_if(self.__label_counter + 1)
+        end_loop_label = self.__label_counter
+        self.__label_counter += 1
+        self.__writer.write_if(end_loop_label)
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
         # advance the tokenizer for the statements
@@ -362,12 +366,8 @@ class CompilationEngine:
         self.__advance_tokenizer()
 
         # goes back to the top of the label
-        self.__writer.write_goto(self.__label_counter)
-        self.__label_counter += 1  # increments the label counter for the end of the while label
-        self.__writer.write_label(self.__label_counter)  # writes the end loop label
-
-        # increments the label counter for the next time
-        self.__label_counter += 1
+        self.__writer.write_goto(start_loop_label)
+        self.__writer.write_label(end_loop_label)  # writes the end loop label
 
     def __compile_return(self):
         """
@@ -410,7 +410,9 @@ class CompilationEngine:
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
         self.__writer.write_arithmetic(NOT_OPERATOR, True)
         # if the expression is false, goto the next label (else label)
-        self.__writer.write_if(self.__label_counter)
+        else_label = self.__label_counter
+        self.__label_counter += 1
+        self.__writer.write_if(else_label)
 
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
         # advance the tokenizer for the statements
@@ -418,8 +420,11 @@ class CompilationEngine:
         self.__compile_statements()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '}'
 
-        self.__writer.write_goto(self.__label_counter + 1)  # goto the next label after at the end of the if statement
-        self.__writer.write_label(self.__label_counter)  # else label
+        end_if_label = self.__label_counter
+        self.__label_counter += 1
+        self.__writer.write_goto(end_if_label)  # goto the end of the if statement
+
+        self.__writer.write_label(else_label)  # writes else label
         if self.__check_keyword_symbol(KEYWORD_TYPE, [ELSE_KEYWORD]):  # 'else'
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
             # advance the tokenizer for the statements
@@ -428,7 +433,7 @@ class CompilationEngine:
             self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '}'
             self.__advance_tokenizer()
 
-        self.__writer.write_label(self.__label_counter + 1)  # write the end if statement label
+        self.__writer.write_label(end_if_label)  # write the end if statement label
 
     def __compile_expression(self):
         """

@@ -104,7 +104,7 @@ class VMWriter:
         :param name: the called function name
         :param n_args: the number of arguments passed to the function
         """
-        self.__output_stream.write(CALL_COMMAND + COMMAND_SEP + name + COMMAND_SEP + n_args + LINE_BREAK)
+        self.__output_stream.write(CALL_COMMAND + COMMAND_SEP + name + COMMAND_SEP + str(n_args) + LINE_BREAK)
 
     def write_function(self, name, n_locals):
         """
@@ -112,7 +112,7 @@ class VMWriter:
         :param name: the function name
         :param n_locals: the number of local variable the function needs
         """
-        self.__output_stream.write(FUNCTION_COMMAND + COMMAND_SEP + name + COMMAND_SEP + n_locals + LINE_BREAK)
+        self.__output_stream.write(FUNCTION_COMMAND + COMMAND_SEP + name + COMMAND_SEP + str(n_locals) + LINE_BREAK)
 
     def write_return(self):
         """

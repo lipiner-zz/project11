@@ -41,7 +41,7 @@ class SymbolTable:
         # creates new var with the next index
         new_var = Variable(name, var_type, kind, self.__var_segment_count[kind])
         # adds the var to the correct dictionary
-        if kind in FIELD_SEGMENT_KEYWORD:
+        if kind in CLASS_VAR_DEC_KEYWORDS:
             self.__class_variables[name] = new_var
         else:
             self.__subroutine_variables[name] = new_var

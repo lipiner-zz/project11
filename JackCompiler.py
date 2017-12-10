@@ -10,7 +10,7 @@ from CompilationEngine import CompilationEngine
 # constants #
 #############
 PATH_POS = 1  # the arguments position for the file path
-VM_SUFFIX = ".xml"
+VM_SUFFIX = ".vm"
 JACK_SUFFIX = ".jack"
 WRITING_MODE = "w"
 FILE_NAME_POSITION = -1

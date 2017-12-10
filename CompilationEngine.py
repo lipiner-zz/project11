@@ -486,7 +486,7 @@ class CompilationEngine:
             self.__writer.write_arithmetic(op, True)
         # varName / varName[expression] / subroutineCall- in any case, starts with identifier
         else:
-            self.__check_keyword_symbol(IDENTIFIER_TYPE)
+            # self.__check_keyword_symbol(IDENTIFIER_TYPE)
             identifier_name = self.__tokenizer.get_value()
             # checks for function/method call
             if self.__check_subroutine_call():

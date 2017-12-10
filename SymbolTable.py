@@ -74,9 +74,9 @@ class SymbolTable:
         identifier is unknown in the current scope.
         """
         if var_name in self.__subroutine_variables:
-            return self.__subroutine_variables[var_name].get_type()
+            return self.__subroutine_variables[var_name].get_kind()
         if var_name in self.__class_variables:
-            return self.__class_variables[var_name].get_type()
+            return self.__class_variables[var_name].get_kind()
         return None
 
     def get_index_of(self, var_name):
@@ -86,7 +86,7 @@ class SymbolTable:
         identifier is unknown in the current scope.
         """
         if var_name in self.__subroutine_variables:
-            return self.__subroutine_variables[var_name].get_type()
+            return self.__subroutine_variables[var_name].get_index()
         if var_name in self.__class_variables:
-            return self.__class_variables[var_name].get_type()
+            return self.__class_variables[var_name].get_index()
         return None

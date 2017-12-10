@@ -298,7 +298,6 @@ class CompilationEngine:
         # if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):  # array access, if not: =
             self.__analyze_array_var(left_side_var)
-            self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
         # else:  # with calling advance
         #     self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
@@ -459,7 +458,7 @@ class CompilationEngine:
             self.__writer.write_push(CONSTANT_SEGMENT, int(self.__tokenizer.get_value()))
             self.__advance_tokenizer()
         # string constant
-        if self.__tokenizer.get_token_type() in STRING_CONST_TYPE:
+        elif self.__tokenizer.get_token_type() in STRING_CONST_TYPE:
             self.__compile_string_constant()
             self.__advance_tokenizer()
         # keyword constant
@@ -496,7 +495,6 @@ class CompilationEngine:
                 self.__analyze_array_var(identifier_name)
                 self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)  # pop pointer 1
                 self.__writer.write_push(THAT_SEGMENT, 0)  # push that 0
-                self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
                 self.__advance_tokenizer()
             # varName
             else:
@@ -512,6 +510,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
         self.__compile_expression()  # push the expression
         self.__writer.write_arithmetic(PLUS)  # varName + expression
+        self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
 
     def __compile_string_constant(self):
         """

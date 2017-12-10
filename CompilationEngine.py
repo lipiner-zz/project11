@@ -271,8 +271,9 @@ class CompilationEngine:
         self.__check_keyword_symbol(KEYWORD_TYPE, make_advance=False)  # 'do'
 
         # advance the tokenizer for the subroutine call
-        self.__advance_tokenizer()
-        self.__check_subroutine_call()
+        self.__check_keyword_symbol(IDENTIFIER_TYPE)  # identifier that would be operate on
+        identifier_name = self.__tokenizer.get_value()
+        self.__check_subroutine_call(identifier_name)
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
 
         self.__advance_tokenizer()
@@ -295,12 +296,13 @@ class CompilationEngine:
         # self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
 
         # compile the left side of the equation
-        if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
-            ########## CHANGE THAT TO COMPILE ARRAY EXPRESSION!!!!!!
-            self.__compile_expression()
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
-        else:  # with calling advance
+        # if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
+        if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):  # array access, if not: =
+            self.__analyze_array_var(left_side_var)
+            self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
+        # else:  # with calling advance
+        #     self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
 
         # if self.__check_keyword_symbol(SYMBOL_TYPE, OPEN_ARRAY_ACCESS_BRACKET):  # '['
         #     # advance the tokenizer for the expression
@@ -492,17 +494,25 @@ class CompilationEngine:
                 return
             # varName[expression]
             if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
-                self.__push_var(identifier_name)  # push the var
-                self.__advance_tokenizer()
-                self.__compile_expression()  # push the expression
-                self.__writer.write_arithmetic(PLUS)  # varName + expression
+                self.__analyze_array_var(identifier_name)
                 self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)  # pop pointer 1
                 self.__writer.write_push(THAT_SEGMENT, 0)  # push that 0
                 self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
                 self.__advance_tokenizer()
             # varName
             else:
-                self.__push_var(identifier_name) # push the var
+                self.__push_var(identifier_name)  # push the var
+
+    def __analyze_array_var(self, identifier_name):
+        """
+        varName[expression]
+        operate varName + expression
+        :param identifier_name: the variable'a name
+        """
+        self.__push_var(identifier_name)  # push the var
+        self.__advance_tokenizer()
+        self.__compile_expression()  # push the expression
+        self.__writer.write_arithmetic(PLUS)  # varName + expression
 
     def __compile_string_constant(self):
         """

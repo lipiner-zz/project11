@@ -6,7 +6,7 @@ from VMWriter import VMWriter, CONSTANT_SEGMENT, LOCAL_SEGMENT, ARG_SEGMENT, STA
 from SymbolTable import SymbolTable, STATIC_SEGMENT_KEYWORD, FIELD_SEGMENT_KEYWORD, ARG_SEGMENT_KEYWORD, \
     VAR_SEGMENT_KEYWORD
 
-OP_LIST = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
+OP_LIST = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
 UNARY_OP_LIST = ['-', '~']
 COMPILER_TAG = "tokens"
 CLASS_TAG = "class"

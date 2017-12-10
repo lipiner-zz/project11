@@ -16,7 +16,6 @@ COMMENT_SYMBOLS = ["/", "*"]
 BLOCK_COMMENT_START_MARK = "/*"
 BLOCK_COMMENT_END_MARK = "*/"
 LINE_COMMENT_MARK = "//"
-SYMBOL_FIX = {"<": "&lt;", ">": "&gt;", "&": "&amp;"}
 
 
 class JackTokenizer:
@@ -74,8 +73,6 @@ class JackTokenizer:
                 self.__next_token = next_char
                 self.__process_next_token()
 
-        self.__fix_symbol()  # fix the symbol format in case it is needed
-
     def __process_next_token(self):
         """
         Processes the next token, checks for its type.
@@ -114,13 +111,6 @@ class JackTokenizer:
         :return: the token value
         """
         return self.__current_token
-
-    def __fix_symbol(self):
-        """
-        Changes the symbol if it contains XML unsupported notes
-        """
-        if self.__current_token in SYMBOL_FIX:
-            self.__current_token = SYMBOL_FIX[self.__current_token]
 
     def __get_string_constant_value(self):
         """

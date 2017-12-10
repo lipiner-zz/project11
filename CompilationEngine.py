@@ -58,6 +58,10 @@ THAT_POINTER_INDEX = 1
 THIS_POINTER_INDEX = 0
 ALLOC_FUNCTION = "Memory.alloc"
 ALLOC_ARGS_NUM = 1
+STRING_CONSTRUCTOR = "String.new"
+STRING_CONSTRUCT_NUM_ARGS = 1
+STRING_APPEND = "String.appendChar"
+STRING_APPEND_NUM_ARGS = 2
 
 
 class CompilationEngine:
@@ -345,7 +349,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
-        self.__writer.write_arithmetic(NOT_OPERATOR)
+        self.__writer.write_arithmetic(NOT_OPERATOR, True)
         # if the expression is false, goto the next label
         self.__writer.write_if(self.__label_counter + 1)
 
@@ -404,7 +408,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
         self.__compile_expression()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
-        self.__writer.write_arithmetic(NOT_OPERATOR)
+        self.__writer.write_arithmetic(NOT_OPERATOR, True)
         # if the expression is false, goto the next label (else label)
         self.__writer.write_if(self.__label_counter)
 
@@ -429,6 +433,8 @@ class CompilationEngine:
     def __compile_expression(self):
         """
         compiles an expression
+        Assumes the tokenizer is advanced for the first call.
+        Advances the tokenizer at the end
         """
         # compiles the first term
         self.__compile_term()
@@ -443,6 +449,8 @@ class CompilationEngine:
     def __compile_term(self):
         """
         compiles a term
+        Assumes the tokenizer is advanced for the first call.
+        Advances the tokenizer at the end
         """
         # checks for all the term options:
         # integer constant
@@ -451,16 +459,16 @@ class CompilationEngine:
             self.__advance_tokenizer()
         # string constant
         if self.__tokenizer.get_token_type() in STRING_CONST_TYPE:
-            #####NOT FINISHED HERE
+            self.__compile_string_constant()
             self.__advance_tokenizer()
         # keyword constant
         elif self.__check_keyword_symbol(KEYWORD_TYPE, KEYWORD_CONSTANT_LIST, False):
-            if self.__tokenizer.get_value() == THIS_CONSTANT:
+            if self.__tokenizer.get_value() == THIS_CONSTANT:  # push this
                 self.__writer.write_push(POINTER_SEGMENT, 0)
-            elif self.__tokenizer.get_value() == TRUE_CONSTANT:
+            elif self.__tokenizer.get_value() == TRUE_CONSTANT:  # push -1
                 self.__writer.write_push(CONSTANT_SEGMENT, 1)
-                self.__writer.write_arithmetic(MINUS)
-            else:  # false/null
+                self.__writer.write_arithmetic(MINUS, True)
+            else:  # false/null- push 0
                 self.__writer.write_push(CONSTANT_SEGMENT, 0)
             self.__advance_tokenizer()
         # (expression)
@@ -474,87 +482,86 @@ class CompilationEngine:
             op = self.__tokenizer.get_value()
             self.__advance_tokenizer()
             self.__compile_term()
-            self.__writer.write_arithmetic(op)
+            self.__writer.write_arithmetic(op, True)
         # varName / varName[expression] / subroutineCall- in any case, starts with identifier
-        else: #################CHANGE SO A SUBROUTINE CALL WILL BE HANDLED
-            if self.__check_variable():
-                identifier_name = self.__tokenizer.get_value()
-                # varName[expression]
-                if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):
-                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
-                                             self.__symbol_table.get_index_of(identifier_name))
-                    self.__advance_tokenizer()
-                    self.__compile_expression()
-                    self.__writer.write_arithmetic(PLUS)
-                    self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)
-                    self.__writer.write_push(THAT_SEGMENT, 0)
-                    self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
-                    self.__advance_tokenizer()
-                # method call: varName.funcName(expressionList)
-                elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
-                    self.__advance_tokenizer()
-                    method_name = self.__tokenizer.get_value()
-                    class_name = self.__symbol_table.get_type_of(identifier_name)
-                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
-                                             self.__symbol_table.get_index_of(identifier_name))
-                    self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
-                    num_args = self.__compile_expression_list()
-                    self.__writer.write_call(class_name + "." + method_name, num_args + 1)
-                    self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
-                    self.__advance_tokenizer()
-                # varName
-                else:
-                    self.__writer.write_push(self.__symbol_table.get_kind_of(identifier_name),
-                                             self.__symbol_table.get_index_of(identifier_name))
+        else:
+            self.__check_keyword_symbol(IDENTIFIER_TYPE)
+            identifier_name = self.__tokenizer.get_value()
+            # checks for function/method call
+            if self.__check_subroutine_call(identifier_name):
+                return
+            # varName[expression]
+            if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
+                self.__push_var(identifier_name)  # push the var
+                self.__advance_tokenizer()
+                self.__compile_expression()  # push the expression
+                self.__writer.write_arithmetic(PLUS)  # varName + expression
+                self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)  # pop pointer 1
+                self.__writer.write_push(THAT_SEGMENT, 0)  # push that 0
+                self.__check_keyword_symbol(SYMBOL_TYPE,)  # ']'
+                self.__advance_tokenizer()
+            # varName
             else:
-                # function call: className.funcName(expressionList)
-                if self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
-                    self.__advance_tokenizer()
-                    method_name = self.__tokenizer.get_value()
+                self.__push_var(identifier_name) # push the var
 
-                self.__check_subroutine_call(identifier_name)
-            if not self.__check_subroutine_call():  # anyway writes the identifier
-                # checks for varName[expression]
-                if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
-                    self.__advance_tokenizer()
-                    self.__compile_expression()
-                    self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
-                    self.__advance_tokenizer()
-
-    def __check_variable(self, make_advance=True):
-        if make_advance:
-            if self.__tokenizer.has_more_tokens():
-                self.__tokenizer.advance()
-            else:
-                return False
-        if self.__tokenizer.get_token_type() == IDENTIFIER_TYPE:
-            name = self.__tokenizer.get_value()
-            # if appears in the symbol table- variable name
-            if self.__symbol_table.get_index_of(name) is not None:
-                return True
-
-        return False
-
-    def __check_subroutine_call(self, func_name):
+    def __compile_string_constant(self):
         """
-        checks if the next tokens are subroutine call. In any case, writes to the stream the first identifier:
-        subroutine/class/variable name
+        compiles a string constant
+        """
+        str_const = repr(self.__tokenizer.get_value())[1:-1]
+        str_len = len(str_const)
+        self.__writer.write_push(CONSTANT_SEGMENT, str_len)
+        self.__writer.write_call(STRING_CONSTRUCTOR, STRING_CONSTRUCT_NUM_ARGS)
+        for char in str_const:
+            self.__writer.write_push(CONSTANT_SEGMENT, ord(char))  # push the char ASCII code
+            self.__writer.write_call(STRING_APPEND, STRING_APPEND_NUM_ARGS)
+
+    def __push_var(self, var_name):
+        """
+        writes a push var command to the output stream to the
+        :param var_name: the variable name to push to the stack
+        """
+        self.__writer.write_push(self.__symbol_table.get_kind_of(var_name),
+                                 self.__symbol_table.get_index_of(var_name))
+
+    def __check_subroutine_call(self, identifier):
+        """
+        checks if the next tokens are subroutine call. If so, writes the vm commands for the subroutine call.
+        Advances the tokenizer at the end
+        :param identifier: the value of the identifier that starts the function call
         :return: true iff the next tokens are subroutine calls
         """
-
+        num_args = 0
+        call_name = ""
         # checks if the next token is '(' : regular subroutine call
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET]):
-            self.__compile_expression_list()
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
-        # checks if the next token is '.' : method call
+            call_name += self.__class_name + CALL_CLASS_METHOD_MARK + identifier
+        # checks if the next token is '.' : function/method call
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
-            self.__check_keyword_symbol(IDENTIFIER_TYPE)  # subroutineName
-            self.__check_keyword_symbol(SYMBOL_TYPE)  # ')'
-            self.__compile_expression_list()
-            self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '('
+            # a variable- method call
+            if self.__symbol_table.get_index_of(identifier) is not None:
+                var_type = self.__symbol_table.get_type_of(identifier)
+                call_name += var_type
+                num_args += 1  # the extra 'this' arg
+                # push this
+                self.__push_var(identifier)
+            # function/ constructor call
+            else:
+                call_name += identifier
+
+            self.__advance_tokenizer()
+            func_name = self.__tokenizer.get_value()
+            call_name += CALL_CLASS_METHOD_MARK + func_name
+            self.__check_keyword_symbol(SYMBOL_TYPE)  # '('
         # if the next token is not ( or . : not a subroutine call
         else:
             return False
+
+        # pushing all args
+        num_args += self.__compile_expression_list()
+        self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ')'
+        # calling the function
+        self.__writer.write_call(call_name, num_args)
 
         self.__advance_tokenizer()
         return True
@@ -586,11 +593,10 @@ class CompilationEngine:
     def __check_keyword_symbol(self, token_type, value_list=None, make_advance=True):
         """
         checks if the current token is from token_type (which is keyword or symbol), and it's value is one of the
-        given optional values (in the value_list). If so, writes the token string to the output file
+        given optional values (in the value_list).
         :param token_type: the wanted type of the current token: keyword or symbol
         :param value_list: a list of optional values for the current token
         :param make_advance: whether or not the method should call tokenizer.advance() at the beginning
-        :param write_to_file: whether or not the method should write the token to the file
         :return: True if the current token is from Keyword type, and it's value exists in the keyword list,
           and false otherwise
         """
@@ -607,7 +613,7 @@ class CompilationEngine:
 
     def __check_type(self, make_advance=True):
         """
-        checks if the current token is a type. If so, writes the token to the stream
+        checks if the current token is a type.
         :param make_advance: whether or not the method should call tokenizer.advance() at the beginning
         :return: true iff the current token is a type
         """

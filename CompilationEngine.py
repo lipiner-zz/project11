@@ -272,8 +272,7 @@ class CompilationEngine:
 
         # advance the tokenizer for the subroutine call
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # identifier that would be operate on
-        identifier_name = self.__tokenizer.get_value()
-        self.__check_subroutine_call(identifier_name)
+        self.__check_subroutine_call()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
 
         self.__advance_tokenizer()
@@ -490,7 +489,7 @@ class CompilationEngine:
             self.__check_keyword_symbol(IDENTIFIER_TYPE)
             identifier_name = self.__tokenizer.get_value()
             # checks for function/method call
-            if self.__check_subroutine_call(identifier_name):
+            if self.__check_subroutine_call():
                 return
             # varName[expression]
             if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET], False):
@@ -534,15 +533,15 @@ class CompilationEngine:
         self.__writer.write_push(self.__symbol_table.get_kind_of(var_name),
                                  self.__symbol_table.get_index_of(var_name))
 
-    def __check_subroutine_call(self, identifier):
+    def __check_subroutine_call(self):
         """
         checks if the next tokens are subroutine call. If so, writes the vm commands for the subroutine call.
         Advances the tokenizer at the end
-        :param identifier: the value of the identifier that starts the function call
         :return: true iff the next tokens are subroutine calls
         """
         num_args = 0
         call_name = ""
+        identifier = self.__tokenizer.get_value()
         # checks if the next token is '(' : regular subroutine call
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET]):
             call_name += self.__class_name + CALL_CLASS_METHOD_MARK + identifier

@@ -23,7 +23,7 @@ class SymbolTable:
 
     def start_subroutine(self):
         """
-        Starts a new subroutine scope (i.e. erases all names in the previous subroutine’s scope)
+        Starts a new subroutine scope (i.e. erases all names in the previous subroutine's scope)
         """
         self.__subroutine_variables = {}
         # nullify the number of args and vars

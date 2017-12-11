@@ -62,6 +62,7 @@ STRING_CONSTRUCTOR = "String.new"
 STRING_CONSTRUCT_NUM_ARGS = 1
 STRING_APPEND = "String.appendChar"
 STRING_APPEND_NUM_ARGS = 2
+CONSTRUCTOR_SUBROUTINE_NAME = "new"
 
 
 class CompilationEngine:
@@ -154,12 +155,12 @@ class CompilationEngine:
         # adds this object in case of a method
         if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
             self.__symbol_table.define(THIS_CONSTANT, self.__class_name, ARG_SEGMENT_KEYWORD)
-        # creates the object in case of a constructor
-        elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
-            num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
-            self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
-            self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
-            self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
+        # # creates the object in case of a constructor
+        # elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
+        #     num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
+        #     self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
+        #     self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
+        #     self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
 
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
@@ -188,6 +189,13 @@ class CompilationEngine:
             current_dec_var_amount = self.__compile_var_dec()
 
         self.__writer.write_function(self.__class_name, subroutine_name, vars_amount)  # writes the function's title
+        # creates the object in case of a constructor
+        if subroutine_name == CONSTRUCTOR_SUBROUTINE_NAME:
+            num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
+            self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
+            self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
+            self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
+
         # compiles the statements of the subroutine
         self.__compile_statements()
 

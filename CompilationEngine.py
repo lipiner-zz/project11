@@ -53,7 +53,7 @@ TAG_END_OF_LINE = "\n"
 MINUS = "-"
 PLUS = "+"
 NOT_OPERATOR = "~"
-ARRAY_TYPE = "array"
+ARRAY_TYPE = "Array"
 THAT_POINTER_INDEX = 1
 THIS_POINTER_INDEX = 0
 ALLOC_FUNCTION = "Memory.alloc"
@@ -299,6 +299,7 @@ class CompilationEngine:
 
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
         left_side_var = self.__tokenizer.get_value()
+        isLeftSideArray = False
         # left_side_type = self.__symbol_table.get_type_of(left_side_var)
         # left_side_kind = self.__symbol_table.get_kind_of(self.__tokenizer.get_value())
         # compile the left side of the equation
@@ -309,6 +310,7 @@ class CompilationEngine:
         # compile the left side of the equation
         # if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):  # array access, if not: =
+            isLeftSideArray = True
             self.__analyze_array_var(left_side_var)
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
         # else:  # with calling advance
@@ -335,7 +337,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
 
         # assign the right side of the equation (that is in the stack) into the left side
-        if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
+        if isLeftSideArray:
             # assign into an array
             self.__writer.write_pop(TEMP_SEGMENT, 0)
             self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)

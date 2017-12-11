@@ -109,6 +109,7 @@ class VMWriter:
     def write_function(self, class_name, name, n_locals):
         """
         Writes a VM function command
+        :param class_name: the name of the function's class
         :param name: the function name
         :param n_locals: the number of local variable the function needs
         """

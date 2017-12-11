@@ -195,6 +195,8 @@ class CompilationEngine:
             self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
             self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
             self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
+            # define this in the symbol table
+            self.__symbol_table.define(THIS_CONSTANT, self.__class_name, ARG_SEGMENT_KEYWORD)
 
         # compiles the statements of the subroutine
         self.__compile_statements()

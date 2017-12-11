@@ -561,7 +561,10 @@ class CompilationEngine:
             call_name += self.__class_name + CALL_CLASS_METHOD_MARK + identifier
             num_args += 1  # the extra 'this' arg
             # push this
-            self.__push_var(THIS_CONSTANT)
+            if self.__symbol_table.get_index_of(THIS_CONSTANT) is not None:
+                self.__push_var(THIS_CONSTANT)
+            else:
+                self.__writer.write_push(POINTER_SEGMENT, THIS_POINTER_INDEX)
         # checks if the next token is '.' : function/method call
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
             # a variable- method call

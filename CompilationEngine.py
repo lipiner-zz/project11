@@ -187,7 +187,7 @@ class CompilationEngine:
             vars_amount += current_dec_var_amount  # adds the last amount of vars that were declared
             current_dec_var_amount = self.__compile_var_dec()
 
-        self.__writer.write_function(subroutine_name, vars_amount)  # writes the function's title
+        self.__writer.write_function(self.__class_name, subroutine_name, vars_amount)  # writes the function's title
         # compiles the statements of the subroutine
         self.__compile_statements()
 

@@ -9,10 +9,9 @@ POINTER_SEGMENT = "pointer"
 TEMP_SEGMENT = "temp"
 THAT_SEGMENT = "that"
 THIS_SEGMENT = "this"
-LABEL_PREFIX = "("
-LABEL_SUFFIX = ")"
 PUSH_COMMAND = "push"
 POP_COMMAND = "pop"
+LABEL_COMMAND = "label"
 GOTO_COMMAND = "goto"
 IF_COMMAND = "if-goto"
 RETURN_COMMAND = "return"
@@ -27,6 +26,7 @@ UNARY_OP_DICT = {"-": "neg", "~": "not"}
 BINARY_OP_DICT = {"+": "add", "-": "sub", "&": "and", "|": "or", ">": "gt", "<": "lt", "=": "eq"}
 LABEL_NAME = "L"
 LINE_BREAK = "\n"
+FUNCTION_NAME_SEP = "."
 
 
 class VMWriter:
@@ -82,7 +82,7 @@ class VMWriter:
         Writes a VM label command
         :param label: The number (index) of the label to create
         """
-        self.__output_stream.write(LABEL_PREFIX + LABEL_NAME + str(label) + LABEL_SUFFIX + LINE_BREAK)
+        self.__output_stream.write(LABEL_COMMAND + COMMAND_SEP + LABEL_NAME + str(label) + LINE_BREAK)
 
     def write_goto(self, label):
         """
@@ -106,13 +106,14 @@ class VMWriter:
         """
         self.__output_stream.write(CALL_COMMAND + COMMAND_SEP + name + COMMAND_SEP + str(n_args) + LINE_BREAK)
 
-    def write_function(self, name, n_locals):
+    def write_function(self, class_name, name, n_locals):
         """
         Writes a VM function command
         :param name: the function name
         :param n_locals: the number of local variable the function needs
         """
-        self.__output_stream.write(FUNCTION_COMMAND + COMMAND_SEP + name + COMMAND_SEP + str(n_locals) + LINE_BREAK)
+        self.__output_stream.write(FUNCTION_COMMAND + COMMAND_SEP + class_name + FUNCTION_NAME_SEP + name +
+                                   COMMAND_SEP + str(n_locals) + LINE_BREAK)
 
     def write_return(self):
         """

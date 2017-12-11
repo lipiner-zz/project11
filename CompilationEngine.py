@@ -184,7 +184,7 @@ class CompilationEngine:
 
     def __compile_parameter_list(self):
         """
-        Compiles a (possibly empty) parameter list, not including the enclosing “()”.
+        Compiles a (possibly empty) parameter list, not including the enclosing "()".
         In any way, the function advance the tokenizer
         """
         if self.__check_type():

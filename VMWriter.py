@@ -9,10 +9,9 @@ POINTER_SEGMENT = "pointer"
 TEMP_SEGMENT = "temp"
 THAT_SEGMENT = "that"
 THIS_SEGMENT = "this"
-LABEL_PREFIX = "("
-LABEL_SUFFIX = ")"
 PUSH_COMMAND = "push"
 POP_COMMAND = "pop"
+LABEL_COMMAND = "label"
 GOTO_COMMAND = "goto"
 IF_COMMAND = "if-goto"
 RETURN_COMMAND = "return"
@@ -83,7 +82,7 @@ class VMWriter:
         Writes a VM label command
         :param label: The number (index) of the label to create
         """
-        self.__output_stream.write(LABEL_PREFIX + LABEL_NAME + str(label) + LABEL_SUFFIX + LINE_BREAK)
+        self.__output_stream.write(LABEL_COMMAND + COMMAND_SEP + LABEL_NAME + str(label) + LINE_BREAK)
 
     def write_goto(self, label):
         """

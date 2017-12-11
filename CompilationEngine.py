@@ -8,19 +8,11 @@ from SymbolTable import SymbolTable, STATIC_SEGMENT_KEYWORD, FIELD_SEGMENT_KEYWO
 
 OP_LIST = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
 UNARY_OP_LIST = ['-', '~']
-COMPILER_TAG = "tokens"
-CLASS_TAG = "class"
-CLASS_VAR_TAG = "classVarDec"
-SUBROUTINE_BODY_TAG = "subroutineBody"
-VAR_DEC_TAG = "varDec"
-PARAMETERS_LIST_TAG = "parameterList"
-SUBROUTINE_DEC_TAG = "subroutineDec"
 METHOD_DEC_KEYWORD = 'method'
 CONSTRUCTOR_DEC_KEYWORD = 'constructor'
 SUBROUTINE_DEC_KEYWORDS = [CONSTRUCTOR_DEC_KEYWORD, 'function', METHOD_DEC_KEYWORD]
 VAR_KEYWORDS = [VAR_SEGMENT_KEYWORD]
 TYPE_LIST = ["int", "char", "boolean"]
-STATEMENTS_TAG = "statements"
 LET_KEYWORD = "let"
 IF_KEYWORD = "if"
 ELSE_KEYWORD = "else"
@@ -28,14 +20,6 @@ WHILE_KEYWORD = "while"
 DO_KEYWORD = "do"
 RETURN_KEYWORD = "return"
 STATEMENTS_LIST = [LET_KEYWORD, IF_KEYWORD, WHILE_KEYWORD, DO_KEYWORD, RETURN_KEYWORD]
-LET_TAG = "letStatement"
-IF_TAG = "ifStatement"
-WHILE_TAG = "whileStatement"
-DO_TAG = "doStatement"
-RETURN_TAG = "returnStatement"
-EXPRESSION_TAG = "expression"
-TERM_TAG = "term"
-EXPRESSION_LIST_TAG = "expressionList"
 ADDITIONAL_VAR_OPTIONAL_MARK = ","
 END_LINE_MARK = ";"
 OPEN_BRACKET = '('
@@ -92,9 +76,7 @@ class CompilationEngine:
         """
         Compiles the whole file
         """
-        # self.__output_stream.write(self.__create_tag(COMPILER_TAG))
         self.__compile_class()
-        # self.__output_stream.write(self.__create_tag(COMPILER_TAG, TAG_CLOSER))
 
     def __compile_class(self):
         """
@@ -155,12 +137,6 @@ class CompilationEngine:
         # adds this object in case of a method
         if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
             self.__symbol_table.define(THIS_CONSTANT, self.__class_name, ARG_SEGMENT_KEYWORD)
-        # # creates the object in case of a constructor
-        # elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
-        #     num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
-        #     self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
-        #     self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
-        #     self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
 
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
@@ -196,6 +172,7 @@ class CompilationEngine:
             self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
             self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
         elif self.__symbol_table.get_index_of(THIS_CONSTANT) is not None:
+            # this was pushed for the method - pop it to this segment
             self.__push_var(THIS_CONSTANT)
             self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)
 
@@ -299,36 +276,13 @@ class CompilationEngine:
 
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # varName
         left_side_var = self.__tokenizer.get_value()
-        isLeftSideArray = False
-        # left_side_type = self.__symbol_table.get_type_of(left_side_var)
-        # left_side_kind = self.__symbol_table.get_kind_of(self.__tokenizer.get_value())
-        # compile the left side of the equation
-        # self.__advance_tokenizer()
-        # self.__compile_expression()
-        # self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
+        is_left_side_array_access = False  # mark if the left side variable is an array access
 
         # compile the left side of the equation
-        # if self.__symbol_table.get_type_of(left_side_var) == ARRAY_TYPE:
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_ARRAY_ACCESS_BRACKET]):  # array access, if not: =
-            isLeftSideArray = True
+            is_left_side_array_access = True
             self.__analyze_array_var(left_side_var)
             self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
-        # else:  # with calling advance
-        #     self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
-
-        # if self.__check_keyword_symbol(SYMBOL_TYPE, OPEN_ARRAY_ACCESS_BRACKET):  # '['
-        #     # advance the tokenizer for the expression
-        #     self.__advance_tokenizer()
-        #     self.__compile_expression()
-        #     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ']'
-        #     self.__check_keyword_symbol(SYMBOL_TYPE)  # '='
-        # else:  # without calling advance
-        #     self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
-
-        # # compile the left side of the equation
-        # self.__advance_tokenizer()
-        # self.__compile_expression()
-        # self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # '='
 
         # compile the right side of the equation
         self.__advance_tokenizer()  # advance the tokenizer for the expression
@@ -337,7 +291,7 @@ class CompilationEngine:
         self.__advance_tokenizer()
 
         # assign the right side of the equation (that is in the stack) into the left side
-        if isLeftSideArray:
+        if is_left_side_array_access:
             # assign into an array
             self.__writer.write_pop(TEMP_SEGMENT, 0)
             self.__writer.write_pop(POINTER_SEGMENT, THAT_POINTER_INDEX)

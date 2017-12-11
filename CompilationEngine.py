@@ -559,7 +559,7 @@ class CompilationEngine:
             call_name += self.__class_name + CALL_CLASS_METHOD_MARK + identifier
             num_args += 1  # the extra 'this' arg
             # push this
-            self.__push_var(identifier)
+            self.__push_var(THIS_CONSTANT)
         # checks if the next token is '.' : function/method call
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
             # a variable- method call

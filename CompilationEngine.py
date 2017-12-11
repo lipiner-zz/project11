@@ -546,9 +546,12 @@ class CompilationEngine:
         num_args = 0
         call_name = ""
         identifier = self.__tokenizer.get_value()
-        # checks if the next token is '(' : regular subroutine call
+        # checks if the next token is '(' : regular method call
         if self.__check_keyword_symbol(SYMBOL_TYPE, [OPEN_BRACKET]):
             call_name += self.__class_name + CALL_CLASS_METHOD_MARK + identifier
+            num_args += 1  # the extra 'this' arg
+            # push this
+            self.__push_var(identifier)
         # checks if the next token is '.' : function/method call
         elif self.__check_keyword_symbol(SYMBOL_TYPE, [CALL_CLASS_METHOD_MARK], False):
             # a variable- method call

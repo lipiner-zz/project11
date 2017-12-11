@@ -1,0 +1,18 @@
+lipiner,shaharaizen
+Yasmin Lipiner-Nir, yasmin.lipinernir@mail.huji.ac.il, 308236488
+Shahar Aizenbud, shachar.aizenbud@mail.huji.ac.il, 312149701
+
+#############
+# project11 #
+#############
+The project parses a jack file (or all jack files in a given directory) written in jack language to a compiled
+vm file. The project consists on the following files:
+
+- VMWirter.py - writes each cm command to the output stream given when initializing the object
+- JackTokenizer.py- Parses the jack code to parts: removes all comments and white space from the input stream, and
+    breaks it into jack language tokens, as specified by the Jack grammar.
+- CompilationEngine.py- Builds the parsed structure of the jack code according to the given tokens from the tokenizer
+    and writes it to an vm file using the VMWriter.
+- JackCompiler- Runs the program. Gets the jack file/directory and produces the matching vm code files.
+- SymbolTable- contains all the known variable in the current subroutine.
+- Variable- contains all the variable's information: its name, type, kind and index in the segment.

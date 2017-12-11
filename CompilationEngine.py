@@ -57,7 +57,7 @@ class CompilationEngine:
     that each compilexxx() routine should read the syntactic construct xxx from the input, advance() the
     tokenizer exactly beyond xxx, and output the parsing of xxx. Thus, most of the compilexxx() may only be called if
     indeed xxx is the next syntactic element of the input.
-    The module emits a structured printout of the code, wrapped in XML tags.
+    The module outputs to the output stream, the correspond VM code.
     """
     def __init__(self, input_stream, output_stream):
         """
@@ -154,6 +154,7 @@ class CompilationEngine:
     def __compile_subroutine_body(self, subroutine_name):
         """
         Compiles a subroutine body
+        :param: subroutine_name: The name of the current subroutine (function/method/constructor's name)
         """
         self.__check_keyword_symbol(SYMBOL_TYPE)  # '{'
 

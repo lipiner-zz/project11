@@ -195,6 +195,9 @@ class CompilationEngine:
             self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
             self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function
             self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)  # anchors this at the base address
+        elif self.__symbol_table.get_index_of(THIS_CONSTANT) is not None:
+            self.__push_var(THIS_CONSTANT)
+            self.__writer.write_pop(POINTER_SEGMENT, THIS_POINTER_INDEX)
 
         # compiles the statements of the subroutine
         self.__compile_statements()
@@ -282,6 +285,7 @@ class CompilationEngine:
         self.__check_keyword_symbol(IDENTIFIER_TYPE)  # identifier that would be operate on
         self.__check_subroutine_call()
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ';'
+        self.__writer.write_pop(TEMP_SEGMENT, 0)
 
         self.__advance_tokenizer()
 

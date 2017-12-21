@@ -134,9 +134,12 @@ class CompilationEngine:
 
         self.__symbol_table.start_subroutine()  # creates new subroutine table
 
+        is_constructor = False
         # adds this object in case of a method
         if self.__tokenizer.get_value() == METHOD_DEC_KEYWORD:
             self.__symbol_table.define(THIS_CONSTANT, self.__class_name, ARG_SEGMENT_KEYWORD)
+        elif self.__tokenizer.get_value() == CONSTRUCTOR_DEC_KEYWORD:
+            is_constructor = True
 
         if not self.__check_keyword_symbol(KEYWORD_TYPE):  # not void
             self.__check_type(False)
@@ -147,11 +150,11 @@ class CompilationEngine:
         self.__compile_parameter_list()
         # advance was made in the compile_parameter_list without use
         self.__check_keyword_symbol(SYMBOL_TYPE, make_advance=False)  # ")"
-        self.__compile_subroutine_body(func_name)
+        self.__compile_subroutine_body(func_name, is_constructor)
 
         return True
 
-    def __compile_subroutine_body(self, subroutine_name):
+    def __compile_subroutine_body(self, subroutine_name, is_constructor):
         """
         Compiles a subroutine body
         :param: subroutine_name: The name of the current subroutine (function/method/constructor's name)
@@ -167,7 +170,7 @@ class CompilationEngine:
 
         self.__writer.write_function(self.__class_name, subroutine_name, vars_amount)  # writes the function's title
         # creates the object in case of a constructor
-        if subroutine_name == CONSTRUCTOR_SUBROUTINE_NAME:
+        if is_constructor:
             num_of_fields = self.__symbol_table.var_count(FIELD_SEGMENT_KEYWORD)
             self.__writer.write_push(CONSTANT_SEGMENT, num_of_fields)  # push the number of fields needed for the object
             self.__writer.write_call(ALLOC_FUNCTION, ALLOC_ARGS_NUM)  # calls the alloc function

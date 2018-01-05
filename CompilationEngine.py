@@ -47,6 +47,7 @@ STRING_CONSTRUCT_NUM_ARGS = 1
 STRING_APPEND = "String.appendChar"
 STRING_APPEND_NUM_ARGS = 2
 CONSTRUCTOR_SUBROUTINE_NAME = "new"
+ESCAPED_TRANSLATOR = {"\t": "\\t", "\n": "\\n", "\r": "\\r", "\b": "\\b"}
 
 
 class CompilationEngine:
@@ -493,7 +494,10 @@ class CompilationEngine:
         """
         compiles a string constant
         """
-        str_const = repr(self.__tokenizer.get_value())[1:-1]
+        str_const = self.__tokenizer.get_value()
+        for char in ESCAPED_TRANSLATOR:
+            str_const.replace(char, ESCAPED_TRANSLATOR[char])
+
         str_len = len(str_const)
         self.__writer.write_push(CONSTANT_SEGMENT, str_len)
         self.__writer.write_call(STRING_CONSTRUCTOR, STRING_CONSTRUCT_NUM_ARGS)

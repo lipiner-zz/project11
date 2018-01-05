@@ -504,7 +504,6 @@ class CompilationEngine:
         self.__writer.write_push(CONSTANT_SEGMENT, str_len)
         self.__writer.write_call(STRING_CONSTRUCTOR, STRING_CONSTRUCT_NUM_ARGS)
         for char in str_const:
-            print(char, ord(char))
             self.__writer.write_push(CONSTANT_SEGMENT, ord(char))  # push the char ASCII code
             self.__writer.write_call(STRING_APPEND, STRING_APPEND_NUM_ARGS)
 

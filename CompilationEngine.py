@@ -47,7 +47,7 @@ STRING_CONSTRUCT_NUM_ARGS = 1
 STRING_APPEND = "String.appendChar"
 STRING_APPEND_NUM_ARGS = 2
 CONSTRUCTOR_SUBROUTINE_NAME = "new"
-ESCAPED_TRANSLATOR = {"\t": "\\t", "\n": "\\n", "\r": "\\r", "\b": "\\b"}
+ESCAPED_TRANSLATOR = {'\t': "\\t", '\n': "\\n", '\r': "\\r", '\b': "\\b"}
 
 
 class CompilationEngine:
